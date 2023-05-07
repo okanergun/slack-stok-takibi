@@ -5,17 +5,43 @@ import time
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 
-slack_token = "token"
+slack_token = "your_auth_token"
 client = WebClient(token=slack_token)
 
 channel_id = "C056DNT4Y06"
 links = [
-    "https://www.trendyol.com/missha/su-bazli-nemlendirici-gunes-koruyucu-jel-50ml-all-around-safe-block-aqua-sun-gel-spf50-pa-p-4049713?boutiqueId=61&merchantId=104886&utm_source=share", 
+    "https://www.trendyol.com/missha/su-bazli-nemlendirici-gunes-koruyucu-jel-50ml-all-around-safe-block-aqua-sun-gel-spf50-pa-p-4049713?boutiqueId=61&merchantId=104886&utm_source=share",
+    "https://www.trendyol.com/pull-bear/erkek-cizgili-rustik-kazak-p-640439193?boutiqueId=61&merchantId=112044&utm_source=share"
 ]
+
+
 driver = webdriver.Chrome(executable_path='chromedriver.exe')
 ts = client.conversations_history(channel=channel_id)["messages"][0]['ts']
-
 while True:
+    
+    for link in links:
+        time.sleep(1)
+        driver.get(link)
+        soup=BeautifulSoup(driver.page_source)
+        buy_button = soup.find('button', {'class': 'add-to-basket'})
+        print(link)
+        if buy_button is not None:
+            button_text = buy_button.text.strip()
+            product_name = soup.find('h1', {'class': 'pr-new-br'})
+            try:
+                if button_text != 'Tükendi!':
+                    response = client.chat_postMessage(channel=channel_id, text ="This product is now in stock: " + product_name.text.strip())
+                    last_text = client.conversations_history(channel=channel_id, oldest = ts)["messages"]
+                    ts = last_text[0]['ts']
+                    print(f' This product is in stock: {product_name.text.strip()}')
+                    links.remove(link)
+            except:
+                raise TypeError(f"Problem with button_text: {(button_text)}")
+        else:
+            print(f'Error occured for this link(probably can\'t find the button).')
+            links.remove(link)
+            print(link)
+            
     time.sleep(1)
     last_text = client.conversations_history(channel=channel_id, oldest = ts)["messages"]
     if not last_text:
@@ -37,24 +63,4 @@ while True:
         response = client.chat_postMessage(channel=channel_id, text="Your message does not include a Trendyol link.")
         last_text = client.conversations_history(channel=channel_id, oldest = ts)["messages"]
         ts = last_text[0]['ts']
-    for link in links:
-        time.sleep(1)
-        driver.get(link)
-        soup=BeautifulSoup(driver.page_source)
-        buy_button = soup.find('button', {'class': 'add-to-basket'})
-        if buy_button is not None:
-            button_text = buy_button.text.strip()
-            product_name = soup.find('h1', {'class': 'pr-new-br'})
-            try:
-                if button_text != 'Tükendi!':
-                    response = client.chat_postMessage(channel=channel_id, text ="This product is now in stock: " + product_name.text.strip())
-                    last_text = client.conversations_history(channel=channel_id, oldest = ts)["messages"]
-                    ts = last_text[0]['ts']
-                    print(f' This product is in stock: {product_name.text.strip()}')
-                    links.remove(link)
-            except:
-                raise TypeError(f"Problem with button_text: {(button_text)}")
-        else:
-            print(f'Error occured for this link(probably can\'t find the button).')
-            links.remove(link)
-            print(link)
+    
