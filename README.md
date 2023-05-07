@@ -1,2 +1,0 @@
-##Trendyol Product Availability Monitor
-This is a Python script that creates a bot that monitors a Slack channel for Trendyol product links and checks the availability of these products. The bot uses BeautifulSoup and Selenium to scrape the product pages and check if the "add-to-basket" button is available. If a product is in stock, the bot sends a message to the Slack channel notifying the users that the product is available.
